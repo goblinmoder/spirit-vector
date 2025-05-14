@@ -13,12 +13,15 @@ import symbolics.division.spirit_vector.logic.state.ManagedState;
 import symbolics.division.spirit_vector.logic.vector.SpiritVector;
 import symbolics.division.spirit_vector.logic.vector.VectorType;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class WallJumpMovement extends AbstractMovementType {
 	protected static final int MOMENTUM_GAINED = SpiritVector.MAX_MOMENTUM / 20;
 	protected static final float AXIS_ALIGN_THRESHOLD = -(float) Math.cos(Math.PI / 4 - 0.01); // must be < cos(pi/4) or we can't consistently choose an inverted
 	protected static final Identifier WALL_JUMP_PLANE_TRACKER = SpiritVectorMod.id("wall_jump_plane_tracker");
 
-	private static class WallJumpPlaneTracker extends ManagedState {
+	public static class WallJumpPlaneTracker extends ManagedState {
 		public Pair<Direction, Integer> prevPlane;
 
 		public WallJumpPlaneTracker(SpiritVector sv) {
@@ -44,6 +47,21 @@ public class WallJumpMovement extends AbstractMovementType {
 		((WallJumpPlaneTracker) sv.stateManager().getState(WALL_JUMP_PLANE_TRACKER)).clear();
 	}
 
+	public static List<Direction> validWallJumpDirections(World world, Vec3d pos, WallJumpPlaneTracker planeState){
+		List<Direction> validDirections = new ArrayList<>();
+		for (Direction dir : Direction.values()){
+			if(
+					   dir != Direction.UP
+					&& dir != Direction.DOWN
+					&& MovementUtils.validWallJumpAnchor(world, pos, dir)
+					&& planeState.allowable(dir, pos)
+			){
+				validDirections.add(dir);
+			}
+		}
+		return validDirections;
+	}
+
 	// convert context to input used for wall jumps
 	// normal if normally valid, and
 	// orthogonal (to wall) otherwise.
@@ -58,12 +76,9 @@ public class WallJumpMovement extends AbstractMovementType {
 		Vec3d invertedInput = null;
 		Direction invertedDir = null;
 
-		for (Direction dir : Direction.values()) {
-			// check if ok for a jump
-			if (dir == Direction.DOWN || dir == Direction.UP
-				|| !MovementUtils.validWallJumpAnchor(world, pos, dir)
-				|| !planeState.allowable(dir, pos)
-			) continue;
+		List<Direction> validDirections = validWallJumpDirections(world, pos, planeState);
+		if (!validDirections.isEmpty()) {
+			Direction dir = validDirections.getFirst();
 
 			// determine if return normal input, or prepare to return inverted
 			var normal = dir.getOpposite().getUnitVector();

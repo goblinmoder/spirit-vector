@@ -4,6 +4,7 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
 import symbolics.division.spirit_vector.SpiritVectorMod;
 import symbolics.division.spirit_vector.logic.TravelMovementContext;
 import symbolics.division.spirit_vector.logic.input.Input;
@@ -12,6 +13,8 @@ import symbolics.division.spirit_vector.logic.state.ParticleTrailEffectState;
 import symbolics.division.spirit_vector.logic.vector.DreamVector;
 import symbolics.division.spirit_vector.logic.vector.SpiritVector;
 import symbolics.division.spirit_vector.logic.vector.VectorType;
+
+import java.util.List;
 
 /*
 Mixture of sliding and walljump
@@ -45,6 +48,14 @@ public class WallRushMovement extends AbstractMovementType {
 		if (!ready) {
 			throw new RuntimeException("Wall rush movement was not configured!");
 		}
+
+		WallJumpMovement.WallJumpPlaneTracker planeState = (WallJumpMovement.WallJumpPlaneTracker) sv.stateManager().getState(WallJumpMovement.WALL_JUMP_PLANE_TRACKER);
+		Vec3d pos = sv.user.getPos().add(0, 0.5, 0);
+		World world = sv.user.getWorld();
+
+		// only wall rush or cling if wall jump is possible
+		List<Direction> validDirections = WallJumpMovement.validWallJumpDirections(world, pos, planeState);
+		if (validDirections.isEmpty()) return false;
 
 		if (!sv.user.isOnGround()
 			&& MovementUtils.idealWallrunningConditions(sv)
