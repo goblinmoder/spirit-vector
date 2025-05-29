@@ -22,24 +22,30 @@ public class WallJumpMovement extends AbstractMovementType {
 	protected static final Identifier WALL_JUMP_PLANE_TRACKER = SpiritVectorMod.id("wall_jump_plane_tracker");
 
 	public static class WallJumpPlaneTracker extends ManagedState {
-		public Pair<Direction, Integer> prevPlane;
+		public List<Pair<Direction, Integer>> prevPlanes = new ArrayList<>();
 
 		public WallJumpPlaneTracker(SpiritVector sv) {
 			super(sv);
 		}
 
 		public boolean allowable(Direction dir, Vec3d pos) {
-			return prevPlane == null
-				|| dir != prevPlane.getLeft()
-				|| (int) pos.getComponentAlongAxis(dir.getAxis()) != prevPlane.getRight();
+			for (Pair<Direction, Integer> plane : prevPlanes) {
+				if(dir == plane.getLeft() && (int) pos.getComponentAlongAxis(dir.getAxis()) == plane.getRight()) {
+					return false;
+				}
+			}
+			return true;
 		}
 
-		public void set(Direction dir, int v) {
-			this.prevPlane = new Pair<>(dir, v);
+		public void set(List<Direction> directions){
+			this.clear();
+			for (Direction dir : directions) {
+				this.prevPlanes.add(new Pair<>(dir, (int) sv.user.getPos().getComponentAlongAxis(dir.getAxis())));
+			}
 		}
 
 		public void clear() {
-			this.prevPlane = null;
+			this.prevPlanes.clear();
 		}
 	}
 
@@ -47,14 +53,13 @@ public class WallJumpMovement extends AbstractMovementType {
 		((WallJumpPlaneTracker) sv.stateManager().getState(WALL_JUMP_PLANE_TRACKER)).clear();
 	}
 
-	public static List<Direction> validWallJumpDirections(World world, Vec3d pos, WallJumpPlaneTracker planeState){
+	public static List<Direction> validWallJumpDirections(World world, Vec3d pos){
 		List<Direction> validDirections = new ArrayList<>();
 		for (Direction dir : Direction.values()){
 			if(
 					   dir != Direction.UP
 					&& dir != Direction.DOWN
 					&& MovementUtils.validWallJumpAnchor(world, pos, dir)
-					&& planeState.allowable(dir, pos)
 			){
 				validDirections.add(dir);
 			}
@@ -62,10 +67,19 @@ public class WallJumpMovement extends AbstractMovementType {
 		return validDirections;
 	}
 
+	public static List<Direction> allowableDirections(World world, Vec3d pos, WallJumpPlaneTracker planeState){
+		List<Direction> validDirections = validWallJumpDirections(world, pos);
+		List<Direction> allowableDirections = new ArrayList<>();
+		for (Direction dir : validDirections){
+			if(planeState.allowable(dir, pos)) allowableDirections.add(dir);
+		}
+		return allowableDirections;
+	}
+
 	// convert context to input used for wall jumps
 	// normal if normally valid, and
 	// orthogonal (to wall) otherwise.
-	protected static Pair<Vec3d, Direction> getWalljumpingInput(SpiritVector sv, TravelMovementContext ctx) {
+	protected static Pair<Vec3d, List<Direction>> getWalljumpingInput(SpiritVector sv, TravelMovementContext ctx) {
 		Vec3d input = MovementUtils.augmentedInput(sv, ctx);
 		Vector3f inputV3f = input.toVector3f();
 		Vec3d pos = sv.user.getPos().add(0, 0.5, 0);
@@ -73,43 +87,35 @@ public class WallJumpMovement extends AbstractMovementType {
 		World world = sv.user.getWorld();
 		WallJumpPlaneTracker planeState = (WallJumpPlaneTracker) sv.stateManager().getState(WALL_JUMP_PLANE_TRACKER);
 
-		Vec3d invertedInput = null;
-		Direction invertedDir = null;
+		List<Direction> validDirections = validWallJumpDirections(world, pos);
+		List<Direction> allowableDirections = allowableDirections(world, pos, planeState);
 
-		List<Direction> validDirections = validWallJumpDirections(world, pos, planeState);
-		if (!validDirections.isEmpty()) {
-			Direction dir = validDirections.getFirst();
+		if (allowableDirections.isEmpty()) return null; // no valid wall jump surface
 
-			// determine if return normal input, or prepare to return inverted
-			var normal = dir.getOpposite().getUnitVector();
-			float dp = normal.dot(inputV3f);
-			if (dp > 0) { // jump away
-				return new Pair<>(input, dir);
-			} else if (dp < AXIS_ALIGN_THRESHOLD) { // jump opposite
-				invertedInput = new Vec3d(normal);
-				invertedDir = dir;
-			}
+		Vector3f normal = new Vector3f();
+		for (Direction dir : allowableDirections) {
+			normal.add(dir.getOpposite().getUnitVector());
 		}
+		float dp = normal.dot(inputV3f);
+		Vec3d invertedInput = new Vec3d(normal);
 
-		if (invertedInput != null) {
-			return new Pair<>(invertedInput, invertedDir);
-		} else {
-			// jumping along wall
-			Direction jumpDirection = Direction.getFacing(input);
-			Direction right = jumpDirection.rotateYClockwise();
-			Direction left = jumpDirection.rotateYCounterclockwise();
-			boolean hasRight = planeState.allowable(right, pos) && MovementUtils.validWallJumpAnchor(world, pos, right);
-			boolean hasLeft = planeState.allowable(left, pos) && MovementUtils.validWallJumpAnchor(world, pos, left);
-			Direction result = hasLeft && hasRight && planeState.allowable(jumpDirection, pos) ? jumpDirection // on either side, pretend a wall behind us
-				: hasLeft ? left // or else jumping along
-				: hasRight ? right
-				: null;
-			if (result != null) {
-				return new Pair<>(new Vec3d(jumpDirection.getUnitVector()), result);
-			}
+		if (dp > 0) return new Pair<>(input, validDirections); // jump away
+		else if (dp < AXIS_ALIGN_THRESHOLD) return new Pair<>(invertedInput, validDirections); // jump opposite
 
-			return null;
+		// jumping along wall
+		Direction jumpDirection = Direction.getFacing(input);
+		Direction right = jumpDirection.rotateYClockwise();
+		Direction left = jumpDirection.rotateYCounterclockwise();
+		boolean hasRight = planeState.allowable(right, pos) && MovementUtils.validWallJumpAnchor(world, pos, right);
+		boolean hasLeft = planeState.allowable(left, pos) && MovementUtils.validWallJumpAnchor(world, pos, left);
+		Direction result = hasLeft && hasRight && planeState.allowable(jumpDirection, pos) ? jumpDirection // on either side, pretend a wall behind us
+			: hasLeft ? left // or else jumping along
+			: hasRight ? right
+			: null;
+		if (result != null) {
+			return new Pair<>(new Vec3d(jumpDirection.getUnitVector()), validDirections);
 		}
+		return null;
 	}
 
 	public WallJumpMovement(Identifier id) {
@@ -136,7 +142,7 @@ public class WallJumpMovement extends AbstractMovementType {
 			return;
 		}
 
-		Direction dir = result.getRight();
+		List<Direction> dirs = result.getRight();
 		Vec3d input = result.getLeft();
 
 		Vec3d motion = new Vec3d(input.x / 2, 0.5, input.z / 2);
@@ -150,9 +156,7 @@ public class WallJumpMovement extends AbstractMovementType {
 			sv.user.setVelocity(motion);
 		}
 
-		((WallJumpPlaneTracker) sv.stateManager().getState(WALL_JUMP_PLANE_TRACKER)).set(
-			dir, (int) sv.user.getPos().getComponentAlongAxis(dir.getAxis())
-		);
+		((WallJumpPlaneTracker) sv.stateManager().getState(WALL_JUMP_PLANE_TRACKER)).set(dirs);
 		sv.effectsManager().spawnRing(sv.user.getPos(), motion);
 	}
 

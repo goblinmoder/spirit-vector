@@ -54,8 +54,8 @@ public class WallRushMovement extends AbstractMovementType {
 		World world = sv.user.getWorld();
 
 		// only wall rush or cling if wall jump is possible
-		List<Direction> validDirections = WallJumpMovement.validWallJumpDirections(world, pos, planeState);
-		if (validDirections.isEmpty()) return false;
+		List<Direction> allowedDirections = WallJumpMovement.allowableDirections(world, pos, planeState);
+		if (allowedDirections.isEmpty()) return false;
 
 		if (!sv.user.isOnGround()
 			&& MovementUtils.idealWallrunningConditions(sv)
