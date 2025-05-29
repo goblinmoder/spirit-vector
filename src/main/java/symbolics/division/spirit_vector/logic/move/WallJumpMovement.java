@@ -94,12 +94,11 @@ public class WallJumpMovement extends AbstractMovementType {
 
 		Vector3f normal = new Vector3f();
 		for (Direction dir : allowableDirections) {
-			normal.add(dir.getOpposite().getUnitVector().div(allowableDirections.size()));
+			normal.add(dir.getOpposite().getUnitVector());
 		}
 		float dp = normal.dot(inputV3f);
 		Vec3d invertedInput = new Vec3d(normal);
 
-		if (allowableDirections.size() > 1) return new Pair<>(invertedInput, validDirections); // jump from corner
 		if (dp > 0) return new Pair<>(input, validDirections); // jump away
 		else if (dp < AXIS_ALIGN_THRESHOLD) return new Pair<>(invertedInput, validDirections); // jump opposite
 
