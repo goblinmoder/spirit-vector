@@ -8,7 +8,7 @@ import net.minecraft.screen.slot.Slot;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.ColorHelper;
-import symbolics.division.spirit_vector.ConfigProfile;
+import symbolics.division.spirit_vector.ClientConfig;
 import symbolics.division.spirit_vector.SpiritVectorMod;
 import symbolics.division.spirit_vector.SpiritVectorSounds;
 import symbolics.division.spirit_vector.logic.vector.VectorType;
@@ -55,7 +55,7 @@ public class RuneMatrixScreen extends HandledScreen<RuneMatrixScreenHandler> {
 			context.drawText(this.textRenderer, Objects.requireNonNull(VectorType.REGISTRY.get(this.handler.getVectorMode())).getDisplayName(), this.playerInventoryTitleX, this.playerInventoryTitleY + 28, color, false);
 		}
 
-		Identifier playSoundSprite = ConfigProfile.playSound() ? VOLUME_ON : VOLUME_OFF;
+		Identifier playSoundSprite = ClientConfig.playSound() ? VOLUME_ON : VOLUME_OFF;
 		context.drawGuiTexture(playSoundSprite, this.playerInventoryTitleX + 145, this.playerInventoryTitleY + 39, 16, 16);
 	}
 
@@ -99,7 +99,7 @@ public class RuneMatrixScreen extends HandledScreen<RuneMatrixScreenHandler> {
 			mouseX >= this.x + 156 && mouseX <= this.x + 166 && mouseY >= this.y + 114 && mouseY <= this.y + 124
 		) {
 			SpiritVectorHUD.playUISound(SpiritVectorSounds.RUNE_MATRIX_CLICK, 1);
-			ConfigProfile.setPlaySound(!ConfigProfile.playSound());
+			ClientConfig.setPlaySound(!ClientConfig.playSound());
 		} else if (this.focusedSlot != null && (!this.handler.getCursorStack().isEmpty() || this.focusedSlot.hasStack())) {
 			SpiritVectorHUD.playUISound(SpiritVectorSounds.RUNE_MATRIX_CLICK, 1);
 		}

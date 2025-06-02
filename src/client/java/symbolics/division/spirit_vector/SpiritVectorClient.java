@@ -47,7 +47,7 @@ public class SpiritVectorClient implements ClientModInitializer {
 
 		/// pardon the dust.
 
-		AutoConfig.register(ConfigProfile.class, JanksonConfigSerializer::new);
+		AutoConfig.register(ClientConfig.class, JanksonConfigSerializer::new);
 
 		EffectsManager.registerSFXRequestC2SCallback(ClientPlayNetworking::send);
 //		registerS2C(
@@ -124,7 +124,7 @@ public class SpiritVectorClient implements ClientModInitializer {
 
 		FootstoolPayloadC2S.register(ClientPlayNetworking::send);
 
-		AudioGirl.playSound = p -> p != MinecraftClient.getInstance().player || ConfigProfile.playSound();
+		AudioGirl.playSound = p -> p != MinecraftClient.getInstance().player || ClientConfig.playSound();
 
 		InputManager.chatInputFilter = () -> MinecraftClient.getInstance().currentScreen instanceof ChatScreen;
 	}

@@ -1,5 +1,6 @@
 package symbolics.division.spirit_vector.logic.move;
 
+import me.shedaniel.autoconfig.AutoConfig;
 import net.minecraft.particle.ParticleEffect;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
@@ -18,6 +19,7 @@ import symbolics.division.spirit_vector.logic.spell.SpellFXEvents;
 import symbolics.division.spirit_vector.logic.spell.StochasticSpell;
 import symbolics.division.spirit_vector.logic.state.ManagedState;
 import symbolics.division.spirit_vector.logic.vector.SpiritVector;
+import symbolics.division.spirit_vector.sfx.ServerConfig;
 import symbolics.division.spirit_vector.sfx.SpiritVectorSFX;
 
 import java.util.ArrayList;
@@ -26,6 +28,7 @@ import java.util.List;
 public class SpellMovement extends NeutralMovement {
 	private static final Identifier CASTING_STATE_ID = SpiritVectorMod.id("casting_spell");
 	private static final int MAX_CASTING_TICKS = 20 * 5;
+	ServerConfig config = AutoConfig.getConfigHolder(ServerConfig.class).getConfig();
 
 	public SpellMovement(Identifier id) {
 		super(id);
@@ -38,6 +41,7 @@ public class SpellMovement extends NeutralMovement {
 
 	@Override
 	public boolean testMovementCondition(SpiritVector sv, TravelMovementContext ctx) {
+		if (!ServerConfig.enableSpellDimension()) return false;
 		InputManager input = sv.inputManager();
 		if (
 			!sv.user.getWorld().spellDimension().isCasting() &&

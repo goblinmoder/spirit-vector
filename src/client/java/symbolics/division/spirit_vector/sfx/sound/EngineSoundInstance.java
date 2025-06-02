@@ -6,7 +6,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
-import symbolics.division.spirit_vector.ConfigProfile;
+import symbolics.division.spirit_vector.ClientConfig;
 import symbolics.division.spirit_vector.SpiritVectorSounds;
 import symbolics.division.spirit_vector.logic.ISpiritVectorUser;
 import symbolics.division.spirit_vector.logic.vector.SpiritVector;
@@ -17,7 +17,7 @@ public class EngineSoundInstance extends MovingSoundInstance {
         return !player.isRemoved()
                 && SpiritVector.hasEquipped(player)
 			&& !player.isInFluid()
-			&& (player != MinecraftClient.getInstance().player || ConfigProfile.playSound());
+			&& (player != MinecraftClient.getInstance().player || ClientConfig.playSound());
     }
 
     private static final float VOLUME_RELATIVE = 0.25f;

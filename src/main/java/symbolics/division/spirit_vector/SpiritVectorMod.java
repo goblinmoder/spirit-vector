@@ -1,5 +1,7 @@
 package symbolics.division.spirit_vector;
 
+import me.shedaniel.autoconfig.AutoConfig;
+import me.shedaniel.autoconfig.serializer.JanksonConfigSerializer;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
@@ -26,6 +28,7 @@ import symbolics.division.spirit_vector.networking.PhysicalizeMateriaPayloadC2S;
 import symbolics.division.spirit_vector.registry.SpiritVectorRegistration;
 import symbolics.division.spirit_vector.sfx.EffectsManager;
 import symbolics.division.spirit_vector.sfx.SFXRequestPayload;
+import symbolics.division.spirit_vector.sfx.ServerConfig;
 import symbolics.division.spirit_vector.sfx.SpiritVectorSFX;
 
 public final class SpiritVectorMod implements ModInitializer {
@@ -45,6 +48,7 @@ public final class SpiritVectorMod implements ModInitializer {
 	@Override
 	public void onInitialize() {
 		LOGGER.info("Fly forth, Spirit Vector!");
+		AutoConfig.register(ServerConfig.class, JanksonConfigSerializer::new);
 		SpiritVectorRegistration.init();
 		SpiritVectorItems.init();
 		SpiritVectorBlocks.init();
